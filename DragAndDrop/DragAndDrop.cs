@@ -10,7 +10,7 @@ namespace DragAndDrop
     [BepInPlugin(GUID: "com.immi.koikatu.draganddrop", Name: "Drag and Drop", Version: "1.1")]
     class DragAndDrop : BaseUnityPlugin
     {
-        UnityDragAndDropHook hook;
+        private UnityDragAndDropHook hook;
 
         private void OnEnable()
         {
@@ -43,19 +43,22 @@ namespace DragAndDrop
         private void LoadCharacter(string path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
+            bool loadFaceEnabled = true;
+            bool loadBodyEnabled = true;
+            bool loadHairEnabled = true;
+            bool loadCharacterEnabled = true;
+            bool loadCoordinateEnabled = true;
             Utils.Sound.Play(SystemSE.ok_s);
             var chaCtrl = Singleton<CustomBase>.Instance.chaCtrl;
             var chaFile = chaCtrl.chaFile;
-            bool flag6 = true; // face
-            bool flag7 = true; // body
-            bool flag8 = true; // hair
-            bool parameter = true; // character
-            bool flag9 = true; // coordinates
-            chaFile.LoadFileLimited(path, chaCtrl.sex, flag6, flag7, flag8, parameter, flag9);
+            chaFile.LoadFileLimited(path, chaCtrl.sex,
+                loadFaceEnabled, loadBodyEnabled, loadHairEnabled, loadCharacterEnabled, loadCoordinateEnabled);
             chaCtrl.ChangeCoordinateType(true);
-            chaCtrl.Reload(!flag9, !flag6 && !flag9, !flag8, !flag7);
+            chaCtrl.Reload(!loadCoordinateEnabled,
+                !loadFaceEnabled && !loadCoordinateEnabled, !loadHairEnabled, !loadBodyEnabled);
             Singleton<CustomBase>.Instance.updateCustomUI = true;
-            Singleton<CustomHistory>.Instance.Add5(chaCtrl, chaCtrl.Reload, !flag9, !flag6 && !flag9, !flag8, !flag7);
+            Singleton<CustomHistory>.Instance.Add5(chaCtrl, chaCtrl.Reload,
+                !loadCoordinateEnabled, !loadFaceEnabled && !loadCoordinateEnabled, !loadHairEnabled, !loadBodyEnabled);
         }
     }
 }
