@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace DragAndDrop
 {
-    [BepInPlugin(GUID: "com.immi.koikatu.draganddrop", Name: "Drag and Drop", Version: "1.0.1")]
+    [BepInPlugin(GUID: "com.immi.koikatu.draganddrop", Name: "Drag and Drop", Version: "1.1")]
     class DragAndDrop : BaseUnityPlugin
     {
         UnityDragAndDropHook hook;
