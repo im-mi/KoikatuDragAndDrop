@@ -1,6 +1,7 @@
 ﻿using B83.Win32;
 using BepInEx;
 using ChaCustom;
+using Illusion.Game;
 using System;
 using System.Collections.Generic;
 
@@ -42,6 +43,7 @@ namespace DragAndDrop
         private void LoadCharacter(string path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
+            Utils.Sound.Play(SystemSE.ok_s);
             var chaCtrl = Singleton<CustomBase>.Instance.chaCtrl;
             var chaFile = chaCtrl.chaFile;
             bool flag6 = true; // face
