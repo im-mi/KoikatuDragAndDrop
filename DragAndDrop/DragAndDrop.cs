@@ -54,8 +54,14 @@ namespace DragAndDrop
             var chaCtrl = Singleton<CustomBase>.Instance.chaCtrl;
             var chaFile = chaCtrl.chaFile;
 
+            var originalSex = chaCtrl.sex;
             if (!chaFile.LoadCharaFile(path, chaCtrl.sex))
                 throw new IOException();
+            if (chaFile.parameter.sex != originalSex)
+            {
+                chaFile.parameter.sex = originalSex;
+                BepInLogger.Log("Warning: The character's sex has been altered to match the editor mode.", true);
+            }
             chaCtrl.ChangeCoordinateType(true);
             chaCtrl.Reload();
             Singleton<CustomBase>.Instance.updateCustomUI = true;
