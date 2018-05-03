@@ -40,7 +40,7 @@ namespace DragAndDrop
                 }
                 catch (Exception ex)
                 {
-                    BepInLogger.Log($"Character load failed", true);
+                    BepInLogger.Log("Character load failed", true);
                     BepInLogger.Log(ex.ToString());
                     Utils.Sound.Play(SystemSE.ok_l);
                 }
