@@ -2,7 +2,6 @@
 using BepInEx;
 using ChaCustom;
 using Illusion.Game;
-using Manager;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -91,6 +90,8 @@ namespace DragAndDrop
                     lf.hair = cfw.tglChaLoadHair.isOn;
                     lf.face = cfw.tglChaLoadFace.isOn;
                     lf.parameters = cfw.tglChaLoadParam.isOn;
+
+                    break;
                 }
             }
 
