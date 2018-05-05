@@ -2,9 +2,11 @@
 using BepInEx;
 using ChaCustom;
 using Illusion.Game;
+using Manager;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using UnityEngine;
 
 namespace DragAndDrop
 {
@@ -51,21 +53,57 @@ namespace DragAndDrop
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
+            LoadFlags lf = GetLoadFlags();
+
             var chaCtrl = Singleton<CustomBase>.Instance.chaCtrl;
             var chaFile = chaCtrl.chaFile;
 
             var originalSex = chaCtrl.sex;
-            if (!chaFile.LoadCharaFile(path, chaCtrl.sex))
+            chaFile.LoadFileLimited(path, chaCtrl.sex, lf.face, lf.body, lf.hair, lf.parameters, lf.clothes);
+
+            if (chaFile.GetLastErrorCode() != 0)
                 throw new IOException();
+
             if (chaFile.parameter.sex != originalSex)
             {
                 chaFile.parameter.sex = originalSex;
                 BepInLogger.Log("Warning: The character's sex has been altered to match the editor mode.", true);
             }
             chaCtrl.ChangeCoordinateType(true);
-            chaCtrl.Reload();
+
+            chaCtrl.Reload(!lf.clothes, !lf.face, !lf.hair, !lf.body);
+
             Singleton<CustomBase>.Instance.updateCustomUI = true;
             Singleton<CustomHistory>.Instance.Add5(chaCtrl, chaCtrl.Reload, false, false, false, false);
         }
+
+        private LoadFlags GetLoadFlags()
+        {
+            var lf = new LoadFlags();
+            lf.body = lf.clothes = lf.hair = lf.face = lf.parameters = true;
+
+            foreach (CustomFileWindow cfw in GameObject.FindObjectsOfType<CustomFileWindow>())
+            {
+                if (cfw.fwType == CustomFileWindow.FileWindowType.CharaLoad)
+                {
+                    lf.body = cfw.tglChaLoadBody.isOn;
+                    lf.clothes = cfw.tglChaLoadCoorde.isOn;
+                    lf.hair = cfw.tglChaLoadHair.isOn;
+                    lf.face = cfw.tglChaLoadFace.isOn;
+                    lf.parameters = cfw.tglChaLoadParam.isOn;
+                }
+            }
+
+            return lf;
+        }
+    }
+
+    struct LoadFlags
+    {
+        public bool clothes;
+        public bool face;
+        public bool hair;
+        public bool body;
+        public bool parameters;
     }
 }
