@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -23,6 +24,8 @@ namespace DragAndDrop
 
         private UnityDragAndDropHook _hook;
 
+        [DisplayName("Use maker load preferences")]
+        [Description("You can partially load the dragged character by changing settings under the \"Load character\" list in maker")]
         public ConfigWrapper<bool> UseMakerLoadPreferences { get; private set; }
 
         protected void Start()
