@@ -10,6 +10,8 @@ using ChaCustom;
 using Illusion.Game;
 using Manager;
 using Studio;
+using UnityEngine;
+using Logger = BepInEx.Logger;
 
 namespace DragAndDrop
 {
@@ -20,6 +22,13 @@ namespace DragAndDrop
         private const string StudioToken = "【KStudio】";
 
         private UnityDragAndDropHook _hook;
+
+        public ConfigWrapper<bool> UseMakerLoadPreferences { get; private set; }
+
+        protected void Start()
+        {
+            UseMakerLoadPreferences = new ConfigWrapper<bool>("useMakerPrefs", this, true);
+        }
 
         protected void OnEnable()
         {
@@ -115,11 +124,11 @@ namespace DragAndDrop
             if (ocichar != null && charaCtrl.parameter.sex == ocichar.sex)
             {
                 var array = (from v in Singleton<GuideObjectManager>.Instance.selectObjectKey
-                    select Studio.Studio.GetCtrlInfo(v) as OCIChar
+                             select Studio.Studio.GetCtrlInfo(v) as OCIChar
                     into v
-                    where v != null
-                    where v.oiCharInfo.sex == (int) charaCtrl.parameter.sex
-                    select v).ToArray();
+                             where v != null
+                             where v.oiCharInfo.sex == (int)charaCtrl.parameter.sex
+                             select v).ToArray();
                 var i = 0;
                 var num = array.Length;
                 while (i < num)
@@ -161,7 +170,7 @@ namespace DragAndDrop
                 {
                 }
                 var byteCount = Encoding.UTF8.GetByteCount(StudioToken);
-                binaryReader.BaseStream.Seek(-(long) byteCount, SeekOrigin.End);
+                binaryReader.BaseStream.Seek(-(long)byteCount, SeekOrigin.End);
                 try
                 {
                     if (Encoding.UTF8.GetString(binaryReader.ReadBytes(byteCount)) == StudioToken)
@@ -178,19 +187,37 @@ namespace DragAndDrop
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
+            var lf = UseMakerLoadPreferences.Value ? GetLoadFlags() : null;
+
             var chaCtrl = Singleton<CustomBase>.Instance.chaCtrl;
             var chaFile = chaCtrl.chaFile;
 
             var originalSex = chaCtrl.sex;
-            if (!chaFile.LoadCharaFile(path, chaCtrl.sex))
-                throw new IOException();
+
+            if (lf != null)
+            {
+                chaFile.LoadFileLimited(path, chaCtrl.sex, lf.Face, lf.Body, lf.Hair, lf.Parameters, lf.Clothes);
+                if (chaFile.GetLastErrorCode() != 0)
+                    throw new IOException("LoadFileLimited failed");
+            }
+            else
+            {
+                if (!chaFile.LoadCharaFile(path, chaCtrl.sex))
+                    throw new IOException("LoadCharaFile failed");
+            }
+            
             if (chaFile.parameter.sex != originalSex)
             {
                 chaFile.parameter.sex = originalSex;
                 Logger.Log(LogLevel.Message, "Warning: The character's sex has been altered to match the editor mode.");
             }
             chaCtrl.ChangeCoordinateType(true);
-            chaCtrl.Reload();
+
+            if (lf != null)
+                chaCtrl.Reload(!lf.Clothes, !lf.Face, !lf.Hair, !lf.Body);
+            else
+                chaCtrl.Reload();
+
             Singleton<CustomBase>.Instance.updateCustomUI = true;
             Singleton<CustomHistory>.Instance.Add5(chaCtrl, chaCtrl.Reload, false, false, false, false);
         }
@@ -200,6 +227,41 @@ namespace DragAndDrop
             Unknown,
             KoikatuChara,
             KStudio
+        }
+
+        private static LoadFlags GetLoadFlags()
+        {
+            var lf = new LoadFlags();
+
+            foreach (var cfw in FindObjectsOfType<CustomFileWindow>())
+            {
+                if (cfw.fwType != CustomFileWindow.FileWindowType.CharaLoad)
+                    continue;
+
+                lf.Body = cfw.tglChaLoadBody.isOn;
+                lf.Clothes = cfw.tglChaLoadCoorde.isOn;
+                lf.Hair = cfw.tglChaLoadHair.isOn;
+                lf.Face = cfw.tglChaLoadFace.isOn;
+                lf.Parameters = cfw.tglChaLoadParam.isOn;
+
+                break;
+            }
+
+            return lf;
+        }
+
+        private class LoadFlags
+        {
+            public bool Clothes;
+            public bool Face;
+            public bool Hair;
+            public bool Body;
+            public bool Parameters;
+
+            public LoadFlags()
+            {
+                Body = Clothes = Hair = Face = Parameters = true;
+            }
         }
     }
 }
