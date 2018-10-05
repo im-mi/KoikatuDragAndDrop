@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -49,20 +50,25 @@ namespace DragAndDrop
         {
             if (aFiles.Count == 0)
                 return;
-            var path = aFiles[0];
-            if (path == null)
+
+            if (!Singleton<Scene>.IsInstance())
                 return;
 
-            if (!Singleton<Scene>.IsInstance()) return;
-
-            var extension = Path.GetExtension(path).ToLower();
-            if (extension != ".png")
+            var goodFiles = aFiles.Where(f =>
             {
-                Logger.Log(LogLevel.Message, $"Unsupported file type {extension}. Only .png files are supported!");
-                return;
-            }
+                if (string.IsNullOrEmpty(f)) return false;
 
-            try
+                var extension = Path.GetExtension(f).ToLower();
+                if (extension == ".png") return true;
+
+                Logger.Log(LogLevel.Message, $"Unsupported file type {extension}. Only .png files are supported!");
+                return false;
+            }).ToList();
+
+            if (goodFiles.Count == 0)
+                return;
+
+            PngType GetType(string path)
             {
                 var pngType = CheckPngType(path);
 
@@ -70,13 +76,23 @@ namespace DragAndDrop
                 {
                     Logger.Log(LogLevel.Message, "Unknown file format, can't load");
                     Utils.Sound.Play(SystemSE.ok_l);
-                    return;
                 }
 
+                return pngType;
+            }
+
+            try
+            {
                 if (Singleton<Scene>.Instance.NowSceneNames.Any(sceneName => sceneName == "CustomScene"))
                 {
                     if (Singleton<CustomBase>.IsInstance())
                     {
+                        if (goodFiles.Count > 1)
+                            Logger.Log(LogLevel.Message, "Warning: Only the first card will be loaded");
+
+                        var path = goodFiles.First();
+                        var pngType = GetType(path);
+
                         if (pngType == PngType.KoikatuChara)
                         {
                             LoadCharacter(path);
@@ -91,26 +107,65 @@ namespace DragAndDrop
                 }
                 else if (Singleton<Scene>.Instance.NowSceneNames.Any(sceneName => sceneName == "Studio"))
                 {
-                    if (pngType == PngType.KoikatuChara)
-                    {
-                        AddChara(path);
-                        Utils.Sound.Play(SystemSE.ok_s);
-                    }
-                    else if (pngType == PngType.KStudio)
-                    {
-                        LoadScene(path);
-                        Utils.Sound.Play(SystemSE.ok_s);
-                    }
+                    var goodFiles2 = goodFiles.Select(x => new KeyValuePair<string, PngType>(x, GetType(x))).ToList();
+                    var scenes = goodFiles2.Where(x => x.Value == PngType.KStudio).ToList();
+
+                    var cards = goodFiles2.Where(x => x.Value == PngType.KoikatuChara).ToList();
+
+                    StartCoroutine(StudioLoadCoroutine(scenes, cards));
                 }
             }
             catch (Exception ex)
             {
-                Logger.Log(LogLevel.Message, $"Character load failed - {ex.Message}");
-                Logger.Log(LogLevel.Error, $"[DragAndDrop] {ex}");
-                Utils.Sound.Play(SystemSE.ok_l);
+                PrintError(ex);
             }
         }
 
+        private static void PrintError(Exception ex)
+        {
+            Logger.Log(LogLevel.Message, $"Character load failed - {ex.Message}");
+            Logger.Log(LogLevel.Error, $"[DragAndDrop] {ex}");
+            Utils.Sound.Play(SystemSE.ok_l);
+        }
+
+        private IEnumerator StudioLoadCoroutine(List<KeyValuePair<string, PngType>> scenes, List<KeyValuePair<string, PngType>> cards)
+        {
+            if (scenes.Count > 0)
+            {
+                if (scenes.Count > 1)
+                    Logger.Log(LogLevel.Message, "Warning: Only the first scene will be loaded");
+
+                var scene = scenes[0];
+
+                try
+                {
+                    LoadScene(scene.Key);
+                }
+                catch (Exception ex)
+                {
+                    PrintError(ex);
+                }
+
+                yield return new WaitForEndOfFrame();
+            }
+
+            foreach (var card in cards)
+            {
+                try
+                {
+                    AddChara(card.Key);
+                }
+                catch (Exception ex)
+                {
+                    PrintError(ex);
+                }
+
+                yield return new WaitForEndOfFrame();
+            }
+
+            Utils.Sound.Play(SystemSE.ok_s);
+        }
+        
         private void LoadScene(string path)
         {
             if (path == null)
@@ -208,7 +263,7 @@ namespace DragAndDrop
                 if (!chaFile.LoadCharaFile(path, chaCtrl.sex))
                     throw new IOException("LoadCharaFile failed");
             }
-            
+
             if (chaFile.parameter.sex != originalSex)
             {
                 chaFile.parameter.sex = originalSex;
