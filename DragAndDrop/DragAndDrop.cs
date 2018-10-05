@@ -1,28 +1,29 @@
-﻿using B83.Win32;
-using BepInEx;
-using ChaCustom;
-using Illusion.Game;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using B83.Win32;
+using BepInEx;
+using BepInEx.Logging;
+using ChaCustom;
+using Illusion.Game;
 
 namespace DragAndDrop
 {
-    [BepInPlugin(GUID: "com.immi.koikatu.draganddrop", Name: "Drag and Drop", Version: "1.1")]
-    class DragAndDrop : BaseUnityPlugin
+    [BepInPlugin("com.immi.koikatu.draganddrop", "Drag and Drop", "1.2")]
+    internal class DragAndDrop : BaseUnityPlugin
     {
-        private UnityDragAndDropHook hook;
+        private UnityDragAndDropHook _hook;
 
-        private void OnEnable()
+        protected void OnEnable()
         {
-            hook = new UnityDragAndDropHook();
-            hook.InstallHook();
-            hook.OnDroppedFiles += OnDroppedFiles;
+            _hook = new UnityDragAndDropHook();
+            _hook.InstallHook();
+            _hook.OnDroppedFiles += OnDroppedFiles;
         }
 
-        private void OnDisable()
+        protected void OnDisable()
         {
-            hook.UninstallHook();
+            _hook.UninstallHook();
         }
 
         private void OnDroppedFiles(List<string> aFiles, POINT aPos)
@@ -40,8 +41,8 @@ namespace DragAndDrop
                 }
                 catch (Exception ex)
                 {
-                    BepInLogger.Log("Character load failed", true);
-                    BepInLogger.Log(ex.ToString());
+                    Logger.Log(LogLevel.Message, $"Character load failed - {ex.Message}");
+                    Logger.Log(LogLevel.Error, $"[DragAndDrop] {ex}");
                     Utils.Sound.Play(SystemSE.ok_l);
                 }
             }
@@ -60,7 +61,7 @@ namespace DragAndDrop
             if (chaFile.parameter.sex != originalSex)
             {
                 chaFile.parameter.sex = originalSex;
-                BepInLogger.Log("Warning: The character's sex has been altered to match the editor mode.", true);
+                Logger.Log(LogLevel.Message, "Warning: The character's sex has been altered to match the editor mode.");
             }
             chaCtrl.ChangeCoordinateType(true);
             chaCtrl.Reload();
