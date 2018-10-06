@@ -13,6 +13,7 @@ To load cards and scenes, drag them from explorer over the main game/studio wind
 - Load character cards in studio.
   - They are added to the current scene.
   - Can load multiple characters at the same time.
+  - If a character is selected, it will be replaced by the dropped card.
 - Load scenes in studio.
   - They are loaded as if you used the "Load" command.
   - Can load scenes and characters at the same time. Scene is loaded first, then the characters.
