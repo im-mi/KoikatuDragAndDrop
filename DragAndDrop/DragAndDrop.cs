@@ -24,6 +24,7 @@ namespace DragAndDrop
         private const string StudioToken = "【KStudio】";
 
         private UnityDragAndDropHook _hook;
+        private static readonly byte[] StudioTokenBytes = Encoding.UTF8.GetBytes(StudioToken);
 
         [DisplayName("Use maker load preferences")]
         [Description("You can partially load the dragged character by changing settings under the \"Load character\" list in maker")]
@@ -227,11 +228,10 @@ namespace DragAndDrop
                 catch (EndOfStreamException)
                 {
                 }
-                var byteCount = Encoding.UTF8.GetByteCount(StudioToken);
-                binaryReader.BaseStream.Seek(-(long)byteCount, SeekOrigin.End);
+
                 try
                 {
-                    if (Encoding.UTF8.GetString(binaryReader.ReadBytes(byteCount)) == StudioToken)
+                    if (Utilities.FindPosition(fileStream, StudioTokenBytes) > 0)
                         return PngType.KStudio;
                 }
                 catch (EndOfStreamException)
