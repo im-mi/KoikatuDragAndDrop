@@ -17,7 +17,7 @@ using Logger = BepInEx.Logger;
 
 namespace DragAndDrop
 {
-    [BepInPlugin("com.immi.koikatu.draganddrop", "Drag and Drop", "1.2")]
+    [BepInPlugin("com.immi.koikatu.draganddrop", "Drag and Drop", "1.2.1")]
     internal class DragAndDrop : BaseUnityPlugin
     {
         private const string CharaToken = "【KoiKatuChara】";
