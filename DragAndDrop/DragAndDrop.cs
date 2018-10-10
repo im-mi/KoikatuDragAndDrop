@@ -71,7 +71,7 @@ namespace DragAndDrop
 
             PngType GetType(string path)
             {
-                var pngType = CheckPngType(path);
+                var pngType = GetPngType(path);
 
                 if (pngType == PngType.Unknown)
                 {
@@ -96,7 +96,7 @@ namespace DragAndDrop
 
                         if (pngType == PngType.KoikatuChara)
                         {
-                            LoadCharacter(path);
+                            LoadMakerCharacter(path);
                             Utils.Sound.Play(SystemSE.ok_s);
                         }
                         else if (pngType == PngType.KStudio)
@@ -108,9 +108,9 @@ namespace DragAndDrop
                 }
                 else if (Singleton<Scene>.Instance.NowSceneNames.Any(sceneName => sceneName == "Studio"))
                 {
-                    var goodFiles2 = goodFiles.Select(x => new KeyValuePair<string, PngType>(x, GetType(x))).ToList();
+                    var goodFiles2 = goodFiles
+                        .Select(x => new KeyValuePair<string, PngType>(x, GetType(x))).ToList();
                     var scenes = goodFiles2.Where(x => x.Value == PngType.KStudio).ToList();
-
                     var cards = goodFiles2.Where(x => x.Value == PngType.KoikatuChara).ToList();
 
                     StartCoroutine(StudioLoadCoroutine(scenes, cards));
@@ -154,7 +154,7 @@ namespace DragAndDrop
             {
                 try
                 {
-                    AddChara(card.Key);
+                    AddSceneCharacter(card.Key);
                 }
                 catch (Exception ex)
                 {
@@ -174,20 +174,21 @@ namespace DragAndDrop
             StartCoroutine(Singleton<Studio.Studio>.Instance.LoadSceneCoroutine(path));
         }
 
-        private static void AddChara(string path)
+        private static void AddSceneCharacter(string path)
         {
             var charaCtrl = new ChaFileControl();
             if (!charaCtrl.LoadCharaFile(path, 1, true, true)) return;
 
-            var ocichar = Studio.Studio.GetCtrlInfo(Singleton<Studio.Studio>.Instance.treeNodeCtrl.selectNode) as OCIChar;
+            var ocichar = Studio.Studio.GetCtrlInfo(
+                Singleton<Studio.Studio>.Instance.treeNodeCtrl.selectNode) as OCIChar;
             if (ocichar != null && charaCtrl.parameter.sex == ocichar.sex)
             {
                 var array = (from v in Singleton<GuideObjectManager>.Instance.selectObjectKey
-                             select Studio.Studio.GetCtrlInfo(v) as OCIChar
+                    select Studio.Studio.GetCtrlInfo(v) as OCIChar
                     into v
-                             where v != null
-                             where v.oiCharInfo.sex == (int)charaCtrl.parameter.sex
-                             select v).ToArray();
+                    where v != null
+                    where v.oiCharInfo.sex == (int)charaCtrl.parameter.sex
+                    select v).ToArray();
                 var i = 0;
                 var num = array.Length;
                 while (i < num)
@@ -197,16 +198,14 @@ namespace DragAndDrop
                 }
                 return;
             }
+
             if (charaCtrl.parameter.sex == 0)
-            {
                 Singleton<Studio.Studio>.Instance.AddMale(path);
-                return;
-            }
-            if (charaCtrl.parameter.sex == 1)
+            else if (charaCtrl.parameter.sex == 1)
                 Singleton<Studio.Studio>.Instance.AddFemale(path);
         }
 
-        private static PngType CheckPngType(string path)
+        private static PngType GetPngType(string path)
         {
             using (var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             using (var binaryReader = new BinaryReader(fileStream))
@@ -238,10 +237,11 @@ namespace DragAndDrop
                 {
                 }
             }
+
             return PngType.Unknown;
         }
 
-        private void LoadCharacter(string path)
+        private void LoadMakerCharacter(string path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
@@ -289,23 +289,19 @@ namespace DragAndDrop
 
         private static LoadFlags GetLoadFlags()
         {
-            var lf = new LoadFlags();
+            var cfw = FindObjectsOfType
+                <CustomFileWindow>()
+                .FirstOrDefault(i => i.fwType == CustomFileWindow.FileWindowType.CharaLoad);
+            if (cfw == null) return new LoadFlags();
 
-            foreach (var cfw in FindObjectsOfType<CustomFileWindow>())
+            return new LoadFlags
             {
-                if (cfw.fwType != CustomFileWindow.FileWindowType.CharaLoad)
-                    continue;
-
-                lf.Body = cfw.tglChaLoadBody.isOn;
-                lf.Clothes = cfw.tglChaLoadCoorde.isOn;
-                lf.Hair = cfw.tglChaLoadHair.isOn;
-                lf.Face = cfw.tglChaLoadFace.isOn;
-                lf.Parameters = cfw.tglChaLoadParam.isOn;
-
-                break;
-            }
-
-            return lf;
+                Body = cfw.tglChaLoadBody.isOn,
+                Clothes = cfw.tglChaLoadCoorde.isOn,
+                Hair = cfw.tglChaLoadHair.isOn,
+                Face = cfw.tglChaLoadFace.isOn,
+                Parameters = cfw.tglChaLoadParam.isOn
+            };
         }
 
         private class LoadFlags
@@ -315,11 +311,6 @@ namespace DragAndDrop
             public bool Hair;
             public bool Body;
             public bool Parameters;
-
-            public LoadFlags()
-            {
-                Body = Clothes = Hair = Face = Parameters = true;
-            }
         }
     }
 }

@@ -11,17 +11,16 @@ namespace DragAndDrop
             if (byteSequence.Length > stream.Length)
                 return -1;
 
-            byte[] buffer = new byte[byteSequence.Length];
+            var buffer = new byte[byteSequence.Length];
 
-            using (BufferedStream bufStream = new BufferedStream(stream, byteSequence.Length))
+            using (var bufferedStream = new BufferedStream(stream, byteSequence.Length))
             {
-                int i;
-                while ((i = bufStream.Read(buffer, 0, byteSequence.Length)) == byteSequence.Length)
+                while (bufferedStream.Read(buffer, 0, byteSequence.Length) == byteSequence.Length)
                 {
                     if (byteSequence.SequenceEqual(buffer))
-                        return bufStream.Position - byteSequence.Length;
+                        return bufferedStream.Position - byteSequence.Length;
                     else
-                        bufStream.Position -= byteSequence.Length - PadLeftSequence(buffer, byteSequence);
+                        bufferedStream.Position -= byteSequence.Length - PadLeftSequence(buffer, byteSequence);
                 }
             }
 
@@ -30,12 +29,12 @@ namespace DragAndDrop
 
         private static int PadLeftSequence(byte[] bytes, byte[] seqBytes)
         {
-            int i = 1;
+            var i = 1;
             while (i < bytes.Length)
             {
-                int n = bytes.Length - i;
-                byte[] aux1 = new byte[n];
-                byte[] aux2 = new byte[n];
+                var n = bytes.Length - i;
+                var aux1 = new byte[n];
+                var aux2 = new byte[n];
                 Array.Copy(bytes, i, aux1, 0, n);
                 Array.Copy(seqBytes, aux2, n);
                 if (aux1.SequenceEqual(aux2))
