@@ -230,7 +230,7 @@ namespace DragAndDrop
 
                 try
                 {
-                    if (Utilities.FindPosition(fileStream, StudioTokenBytes) > 0)
+                    if (fileStream.TryReadUntilSequence(StudioTokenBytes))
                         return PngType.KStudio;
                 }
                 catch (EndOfStreamException)
