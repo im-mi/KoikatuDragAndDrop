@@ -62,7 +62,7 @@ namespace DragAndDrop
                 var extension = Path.GetExtension(f).ToLower();
                 if (extension == ".png") return true;
 
-                Logger.Log(LogLevel.Error, $"Unsupported file type {extension}. Only .png files are supported!");
+                Logger.Log(LogLevel.Error, $"Unsupported file type {extension}. Only .png files are supported.");
                 return false;
             }).ToList();
 
@@ -75,7 +75,7 @@ namespace DragAndDrop
 
                 if (pngType == PngType.Unknown)
                 {
-                    Logger.Log(LogLevel.Error, "Unknown file format, can't load");
+                    Logger.Log(LogLevel.Error, "Unknown file format.");
                     Utils.Sound.Play(SystemSE.ok_l);
                 }
 
@@ -89,7 +89,7 @@ namespace DragAndDrop
                     if (Singleton<CustomBase>.IsInstance())
                     {
                         if (goodFiles.Count > 1)
-                            Logger.Log(LogLevel.Warning, "Only the first card will be loaded");
+                            Logger.Log(LogLevel.Warning, "Only the first card will be loaded.");
 
                         var path = goodFiles.First();
                         var pngType = GetType(path);
@@ -101,7 +101,7 @@ namespace DragAndDrop
                         }
                         else if (pngType == PngType.KStudio)
                         {
-                            Logger.Log(LogLevel.Error, "Can't load scene files in character maker");
+                            Logger.Log(LogLevel.Error, "Scene files cannot be loaded in the character maker.");
                             Utils.Sound.Play(SystemSE.ok_l);
                         }
                     }
@@ -124,7 +124,7 @@ namespace DragAndDrop
 
         private static void PrintError(Exception ex)
         {
-            Logger.Log(LogLevel.Warning, $"Character load failed - {ex.Message}");
+            Logger.Log(LogLevel.Error, $"Character load failed: {ex.Message}");
             Logger.Log(LogLevel.Error, $"[DragAndDrop] {ex}");
             Utils.Sound.Play(SystemSE.ok_l);
         }
@@ -134,7 +134,7 @@ namespace DragAndDrop
             if (scenes.Count > 0)
             {
                 if (scenes.Count > 1)
-                    Logger.Log(LogLevel.Warning, "Only the first scene will be loaded");
+                    Logger.Log(LogLevel.Warning, "Only the first scene will be loaded.");
 
                 var scene = scenes[0];
 
@@ -256,18 +256,18 @@ namespace DragAndDrop
             {
                 chaFile.LoadFileLimited(path, chaCtrl.sex, lf.Face, lf.Body, lf.Hair, lf.Parameters, lf.Clothes);
                 if (chaFile.GetLastErrorCode() != 0)
-                    throw new IOException("LoadFileLimited failed");
+                    throw new IOException("LoadFileLimited failed.");
             }
             else
             {
                 if (!chaFile.LoadCharaFile(path, chaCtrl.sex))
-                    throw new IOException("LoadCharaFile failed");
+                    throw new IOException("LoadCharaFile failed.");
             }
 
             if (chaFile.parameter.sex != originalSex)
             {
                 chaFile.parameter.sex = originalSex;
-                Logger.Log(LogLevel.Warning, "The character's sex has been altered to match the editor mode.");
+                Logger.Log(LogLevel.Warning, "The character's sex has been changed to match the editor mode.");
             }
             chaCtrl.ChangeCoordinateType(true);
 
