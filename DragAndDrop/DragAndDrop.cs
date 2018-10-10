@@ -27,7 +27,7 @@ namespace DragAndDrop
         private static readonly byte[] StudioTokenBytes = Encoding.UTF8.GetBytes(StudioToken);
 
         [DisplayName("Use maker load preferences")]
-        [Description("You can partially load the dragged character by changing settings under the \"Load character\" list in maker")]
+        [Description("Enables partial character loading using the options in the character maker's \"Load character\" menu.")]
         public ConfigWrapper<bool> UseMakerLoadPreferences { get; private set; }
 
         protected void Start()
@@ -128,8 +128,8 @@ namespace DragAndDrop
 
         private static void PlaySound(SystemSE se)
         {
-            if (Singleton<Scene>.Instance.NowSceneNames.Any(sceneName => sceneName == "Studio")) return;
-            Utils.Sound.Play(SystemSE.ok_s);
+            if (!Singleton<CustomBase>.IsInstance()) return;
+            Utils.Sound.Play(se);
         }
 
         private static void PrintError(Exception ex)
