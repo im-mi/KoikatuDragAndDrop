@@ -154,7 +154,7 @@ namespace DragAndDrop
             {
                 try
                 {
-                    AddSceneCharacter(card.Key);
+                    LoadSceneCharacter(card.Key);
                 }
                 catch (Exception ex)
                 {
@@ -174,7 +174,7 @@ namespace DragAndDrop
             StartCoroutine(Singleton<Studio.Studio>.Instance.LoadSceneCoroutine(path));
         }
 
-        private static void AddSceneCharacter(string path)
+        private static void LoadSceneCharacter(string path)
         {
             var charaCtrl = new ChaFileControl();
             if (!charaCtrl.LoadCharaFile(path, 1, true, true)) return;
