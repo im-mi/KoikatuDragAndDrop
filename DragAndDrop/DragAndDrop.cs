@@ -62,12 +62,15 @@ namespace DragAndDrop
                 var extension = Path.GetExtension(f).ToLower();
                 if (extension == ".png") return true;
 
-                Logger.Log(LogLevel.Error, $"Unsupported file type {extension}. Only .png files are supported.");
+                Logger.Log(LogLevel.Message, $"Unsupported file type {extension}. Only .png files are supported.");
                 return false;
             }).ToList();
 
             if (goodFiles.Count == 0)
+            {
+                PlaySound(SystemSE.ok_l);
                 return;
+            }
 
             PngType GetType(string path)
             {
@@ -75,8 +78,8 @@ namespace DragAndDrop
 
                 if (pngType == PngType.Unknown)
                 {
-                    Logger.Log(LogLevel.Error, "Unknown file format.");
-                    Utils.Sound.Play(SystemSE.ok_l);
+                    Logger.Log(LogLevel.Message, "Unknown file format.");
+                    PlaySound(SystemSE.ok_l);
                 }
 
                 return pngType;
@@ -89,7 +92,7 @@ namespace DragAndDrop
                     if (Singleton<CustomBase>.IsInstance())
                     {
                         if (goodFiles.Count > 1)
-                            Logger.Log(LogLevel.Warning, "Only the first card will be loaded.");
+                            Logger.Log(LogLevel.Message, "Warning: Only the first card will be loaded.");
 
                         var path = goodFiles.First();
                         var pngType = GetType(path);
@@ -97,12 +100,12 @@ namespace DragAndDrop
                         if (pngType == PngType.KoikatuChara)
                         {
                             LoadMakerCharacter(path);
-                            Utils.Sound.Play(SystemSE.ok_s);
+                            PlaySound(SystemSE.ok_s);
                         }
                         else if (pngType == PngType.KStudio)
                         {
-                            Logger.Log(LogLevel.Error, "Scene files cannot be loaded in the character maker.");
-                            Utils.Sound.Play(SystemSE.ok_l);
+                            Logger.Log(LogLevel.Message, "Scene files cannot be loaded in the character maker.");
+                            PlaySound(SystemSE.ok_l);
                         }
                     }
                 }
@@ -119,14 +122,21 @@ namespace DragAndDrop
             catch (Exception ex)
             {
                 PrintError(ex);
+                PlaySound(SystemSE.ok_l);
             }
+        }
+
+        private static void PlaySound(SystemSE se)
+        {
+            if (Singleton<Scene>.Instance.NowSceneNames.Any(sceneName => sceneName == "Studio")) return;
+            Utils.Sound.Play(SystemSE.ok_s);
         }
 
         private static void PrintError(Exception ex)
         {
-            Logger.Log(LogLevel.Error, $"Character load failed: {ex.Message}");
+            Logger.Log(LogLevel.Message, $"Character load failed: {ex.Message}");
             Logger.Log(LogLevel.Error, $"[DragAndDrop] {ex}");
-            Utils.Sound.Play(SystemSE.ok_l);
+            PlaySound(SystemSE.ok_l);
         }
 
         private IEnumerator StudioLoadCoroutine(List<KeyValuePair<string, PngType>> scenes, List<KeyValuePair<string, PngType>> cards)
@@ -134,7 +144,7 @@ namespace DragAndDrop
             if (scenes.Count > 0)
             {
                 if (scenes.Count > 1)
-                    Logger.Log(LogLevel.Warning, "Only the first scene will be loaded.");
+                    Logger.Log(LogLevel.Message, "Warning: Only the first scene will be loaded.");
 
                 var scene = scenes[0];
 
@@ -164,7 +174,7 @@ namespace DragAndDrop
                 yield return new WaitForEndOfFrame();
             }
 
-            Utils.Sound.Play(SystemSE.ok_s);
+            PlaySound(SystemSE.ok_s);
         }
         
         private void LoadScene(string path)
@@ -267,7 +277,7 @@ namespace DragAndDrop
             if (chaFile.parameter.sex != originalSex)
             {
                 chaFile.parameter.sex = originalSex;
-                Logger.Log(LogLevel.Warning, "The character's sex has been changed to match the editor mode.");
+                Logger.Log(LogLevel.Message, "Warning: The character's sex has been changed to match the editor mode.");
             }
             chaCtrl.ChangeCoordinateType(true);
 
