@@ -3,7 +3,7 @@ using System.IO;
 
 namespace DragAndDrop
 {
-    public static class Utilities
+    public static class Util
     {
         public static bool TryReadUntilSequence(this Stream stream, byte[] sequence)
         {
