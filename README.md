@@ -27,3 +27,6 @@ To load cards or scenes, drag them from Explorer into the game window.
 ### Limitations
 - Only supports dragging from certain programs (Explorer, KoiCatalog, etc.).
 - Coordinate cards are not supported.
+
+### More Information
+[Koikatu Drag and Drop on GitHub](https://github.com/im-mi/KoiCatalog)
