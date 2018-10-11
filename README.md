@@ -4,11 +4,12 @@ Adds drag and drop support to Koikatu, making it possible to load character card
 ### System Requirements
 - BepInEx v4.0 or newer
 
-### How to Use
+### Installation
 - Download the latest version from the [releases](https://github.com/im-mi/KoikatuDragAndDrop/releases) page.
 - Extract it.
-- Copy the contained BepInEx folder into the Koikatu folder.
+- Copy the included BepInEx folder into the Koikatu folder.
 
+### Usage
 To load cards or scenes, drag them from Explorer into the game window.
 
 ### Features
