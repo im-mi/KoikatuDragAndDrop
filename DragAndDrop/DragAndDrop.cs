@@ -176,7 +176,7 @@ namespace DragAndDrop
 
             PlaySound(SystemSE.ok_s);
         }
-        
+
         private void LoadScene(string path)
         {
             if (path == null)
@@ -191,22 +191,23 @@ namespace DragAndDrop
 
             var ocichar = Studio.Studio.GetCtrlInfo(
                 Singleton<Studio.Studio>.Instance.treeNodeCtrl.selectNode) as OCIChar;
-            if (ocichar != null && charaCtrl.parameter.sex == ocichar.sex)
+            if (ocichar != null)
             {
-                var array = (from v in Singleton<GuideObjectManager>.Instance.selectObjectKey
-                    select Studio.Studio.GetCtrlInfo(v) as OCIChar
-                    into v
-                    where v != null
-                    where v.oiCharInfo.sex == (int)charaCtrl.parameter.sex
-                    select v).ToArray();
-                var i = 0;
-                var num = array.Length;
-                while (i < num)
+                var anyChanged = false;
+                foreach (var oCIChar in Singleton<GuideObjectManager>.Instance.selectObjectKey
+                    .Select(v => Studio.Studio.GetCtrlInfo(v) as OCIChar)
+                    .Where(v => v != null))
                 {
-                    array[i].ChangeChara(path);
-                    i++;
+                    if (oCIChar.oiCharInfo.sex != charaCtrl.parameter.sex)
+                        anyChanged = true;
+
+                    charaCtrl.parameter.sex = (byte) oCIChar.oiCharInfo.sex;
+
+                    oCIChar.ChangeChara(path);
                 }
-                return;
+
+                if(anyChanged)
+                    Logger.Log(LogLevel.Message, "Warning: The character's sex has been changed to match the selected character(s).");
             }
 
             if (charaCtrl.parameter.sex == 0)
