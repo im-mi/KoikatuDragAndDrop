@@ -160,11 +160,13 @@ namespace DragAndDrop
                 yield return new WaitForEndOfFrame();
             }
 
+            var first = true;
             foreach (var card in cards)
             {
                 try
                 {
-                    LoadSceneCharacter(card.Key);
+                    LoadSceneCharacter(card.Key, !first);
+                    first = false;
                 }
                 catch (Exception ex)
                 {
@@ -184,30 +186,38 @@ namespace DragAndDrop
             StartCoroutine(Singleton<Studio.Studio>.Instance.LoadSceneCoroutine(path));
         }
 
-        private static void LoadSceneCharacter(string path)
+        private static void LoadSceneCharacter(string path, bool forceAdd)
         {
             var charaCtrl = new ChaFileControl();
             if (!charaCtrl.LoadCharaFile(path, 1, true, true)) return;
 
-            var ocichar = Studio.Studio.GetCtrlInfo(
-                Singleton<Studio.Studio>.Instance.treeNodeCtrl.selectNode) as OCIChar;
-            if (ocichar != null)
+            if (!forceAdd)
             {
-                var anyChanged = false;
-                foreach (var oCIChar in Singleton<GuideObjectManager>.Instance.selectObjectKey
-                    .Select(v => Studio.Studio.GetCtrlInfo(v) as OCIChar)
-                    .Where(v => v != null))
+                if (Studio.Studio.GetCtrlInfo(Singleton<Studio.Studio>.Instance.treeNodeCtrl.selectNode) is OCIChar)
                 {
-                    if (oCIChar.oiCharInfo.sex != charaCtrl.parameter.sex)
+                    var anySexChanged = false;
+                    var anyChanged = false;
+                    foreach (var oCIChar in Singleton<GuideObjectManager>.Instance.selectObjectKey
+                        .Select(Studio.Studio.GetCtrlInfo)
+                        .OfType<OCIChar>())
+                    {
+                        if (oCIChar.oiCharInfo.sex != charaCtrl.parameter.sex)
+                            anySexChanged = true;
+
+                        charaCtrl.parameter.sex = (byte)oCIChar.oiCharInfo.sex;
+
+                        oCIChar.ChangeChara(path);
+
                         anyChanged = true;
+                    }
 
-                    charaCtrl.parameter.sex = (byte) oCIChar.oiCharInfo.sex;
+                    if (anySexChanged)
+                        Logger.Log(LogLevel.Message, "Warning: The character's sex has been changed to match the selected character(s).");
 
-                    oCIChar.ChangeChara(path);
+                    // Prevent adding a new character if we alraedy replaced an existing one
+                    if(anyChanged)
+                        return;
                 }
-
-                if(anyChanged)
-                    Logger.Log(LogLevel.Message, "Warning: The character's sex has been changed to match the selected character(s).");
             }
 
             if (charaCtrl.parameter.sex == 0)
