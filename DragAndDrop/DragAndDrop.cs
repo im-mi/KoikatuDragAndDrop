@@ -49,6 +49,9 @@ namespace DragAndDrop
 
         private void OnDroppedFiles(List<string> aFiles, POINT aPos)
         {
+            var import = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            Logger.Log(LogLevel.Debug, import ? "Importing" : "Overwriting");
+
             if (aFiles.Count == 0)
                 return;
 
@@ -116,7 +119,7 @@ namespace DragAndDrop
                     var scenes = goodFiles2.Where(x => x.Value == PngType.KStudio).ToList();
                     var cards = goodFiles2.Where(x => x.Value == PngType.KoikatuChara).ToList();
 
-                    StartCoroutine(StudioLoadCoroutine(scenes, cards));
+                    StartCoroutine(StudioLoadCoroutine(scenes, cards, import));
                 }
             }
             catch (Exception ex)
@@ -139,33 +142,52 @@ namespace DragAndDrop
             PlaySound(SystemSE.ok_l);
         }
 
-        private IEnumerator StudioLoadCoroutine(List<KeyValuePair<string, PngType>> scenes, List<KeyValuePair<string, PngType>> cards)
+        private IEnumerator StudioLoadCoroutine(List<KeyValuePair<string, PngType>> scenes, List<KeyValuePair<string, PngType>> cards, bool import)
         {
+            // Load scenes
             if (scenes.Count > 0)
             {
-                if (scenes.Count > 1)
-                    Logger.Log(LogLevel.Message, "Warning: Only the first scene will be loaded.");
-
-                var scene = scenes[0];
-
-                try
+                if (!import)
                 {
-                    LoadScene(scene.Key);
-                }
-                catch (Exception ex)
-                {
-                    PrintError(ex);
-                }
+                    if (scenes.Count > 1)
+                        Logger.Log(LogLevel.Message, "Warning: Only the first scene will be loaded. If you want to import multiple scenes, hold Shift while dropping them.");
 
-                yield return new WaitForEndOfFrame();
+                    try
+                    {
+                        LoadScene(scenes[0].Key, false);
+                    }
+                    catch (Exception ex)
+                    {
+                        PrintError(ex);
+                    }
+
+                    yield return null;
+                }
+                else
+                {
+                    foreach (var scene in scenes)
+                    {
+                        try
+                        {
+                            LoadScene(scene.Key, true);
+                        }
+                        catch (Exception ex)
+                        {
+                            PrintError(ex);
+                        }
+
+                        yield return null;
+                    }
+                }
             }
 
+            // Load characters
             var first = true;
             foreach (var card in cards)
             {
                 try
                 {
-                    LoadSceneCharacter(card.Key, !first);
+                    LoadSceneCharacter(card.Key, !first || import);
                     first = false;
                 }
                 catch (Exception ex)
@@ -179,11 +201,14 @@ namespace DragAndDrop
             PlaySound(SystemSE.ok_s);
         }
 
-        private void LoadScene(string path)
+        private void LoadScene(string path, bool import)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            StartCoroutine(Singleton<Studio.Studio>.Instance.LoadSceneCoroutine(path));
+            if (import)
+                Singleton<Studio.Studio>.Instance.ImportScene(path);
+            else
+                StartCoroutine(Singleton<Studio.Studio>.Instance.LoadSceneCoroutine(path));
         }
 
         private static void LoadSceneCharacter(string path, bool forceAdd)
@@ -215,7 +240,7 @@ namespace DragAndDrop
                         Logger.Log(LogLevel.Message, "Warning: The character's sex has been changed to match the selected character(s).");
 
                     // Prevent adding a new character if we alraedy replaced an existing one
-                    if(anyChanged)
+                    if (anyChanged)
                         return;
                 }
             }
