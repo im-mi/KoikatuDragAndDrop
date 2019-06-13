@@ -21,7 +21,7 @@ namespace DragAndDrop
     internal class DragAndDrop : BaseUnityPlugin
     {
         public const string GUID = "com.immi.koikatu.draganddrop";
-        internal const string Version = "1.3";
+        internal const string Version = "1.3.1";
 
         private const string CharaToken = "【KoiKatuChara】";
         private const string StudioToken = "【KStudio】";
@@ -326,7 +326,6 @@ namespace DragAndDrop
                 chaCtrl.Reload();
 
             Singleton<CustomBase>.Instance.updateCustomUI = true;
-            Singleton<CustomHistory>.Instance.Add5(chaCtrl, chaCtrl.Reload, false, false, false, false);
         }
 
         private enum PngType
