@@ -23,7 +23,7 @@ namespace DragAndDrop
         public const string GUID = "com.immi.koikatu.draganddrop";
         internal const string Version = "1.3.1";
 
-        private const string CharaToken = "【KoiKatuChara】";
+        private const string CharaToken = "【KoiKatuChara";
         private const string StudioToken = "【KStudio】";
 
         private UnityDragAndDropHook _hook;
@@ -270,7 +270,8 @@ namespace DragAndDrop
                 }
                 try
                 {
-                    if (binaryReader.ReadString() == CharaToken)
+                    var str = binaryReader.ReadString();
+                    if (str.StartsWith(CharaToken,StringComparison.OrdinalIgnoreCase))
                         return PngType.KoikatuChara;
                 }
                 catch (EndOfStreamException)
