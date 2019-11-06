@@ -1,3 +1,5 @@
+### Warning: This plugin has been superseeded by [IllusionMods/DragAndDrop](https://github.com/IllusionMods/DragAndDrop) and is no longer actively supported. Use that version instead.
+
 ## Koikatu Drag and Drop
 Adds drag and drop support to Koikatu, making it possible to load character cards and scenes by dragging them into the game window.
 
