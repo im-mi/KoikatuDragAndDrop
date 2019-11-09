@@ -5,3 +5,6 @@
 /.vs
 /DragAndDrop/obj
 /DragAndDrop/bin
+/bin
+/DragAndDropAIS/obj
+/DragAndDropAIS/bin

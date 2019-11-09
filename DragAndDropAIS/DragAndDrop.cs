@@ -4,39 +4,45 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
+using AIChara;
 using B83.Win32;
 using BepInEx;
-using BepInEx.Logging;
-using ChaCustom;
+using BepInEx.Configuration;
+using CharaCustom;
 using Common;
+using Housing;
 using Illusion.Game;
 using Manager;
 using Studio;
 using UnityEngine;
-using Logger = BepInEx.Logger;
+using UnityEngine.UI;
+using Input = UnityEngine.Input;
 
 namespace DragAndDrop
 {
     [BepInPlugin(GUID, "Drag and Drop", Version)]
     internal class DragAndDrop : BaseUnityPlugin
     {
-        public const string GUID = "com.immi.koikatu.draganddrop";
+        public const string GUID = "com.immi.aisyoujyo.draganddrop";
         internal const string Version = Metadata.Version;
 
-        private const string CharaToken = "【KoiKatuChara";
+        private const string CharaToken = "【AIS_Chara】";
         private const string StudioToken = "【KStudio】";
+        private const string HouseToken = "【AIS_Housing】";
 
         private UnityDragAndDropHook _hook;
         private static readonly byte[] StudioTokenBytes = Encoding.UTF8.GetBytes(StudioToken);
 
         [DisplayName("Use maker load preferences")]
         [Description("Enables partial character loading using the options in the character maker's \"Load character\" menu.")]
-        public ConfigWrapper<bool> UseMakerLoadPreferences { get; private set; }
+        public ConfigEntry<bool> UseMakerLoadPreferences { get; private set; }
 
         protected void Start()
         {
-            UseMakerLoadPreferences = new ConfigWrapper<bool>("useMakerPrefs", this, true);
+            UseMakerLoadPreferences = Config.AddSetting("General", "useMakerPrefs", true,
+                "Enables partial character loading using the options in the character maker's \"Load character\" menu.");
         }
 
         protected void OnEnable()
@@ -54,7 +60,7 @@ namespace DragAndDrop
         private void OnDroppedFiles(List<string> aFiles, POINT aPos)
         {
             var import = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-            Logger.Log(LogLevel.Debug, import ? "Importing" : "Overwriting");
+            Logger.Log(BepInEx.Logging.LogLevel.Debug, import ? "Importing" : "Overwriting");
 
             if (aFiles.Count == 0)
                 return;
@@ -69,7 +75,7 @@ namespace DragAndDrop
                 var extension = Path.GetExtension(f).ToLower();
                 if (extension == ".png") return true;
 
-                Logger.Log(LogLevel.Message, $"Unsupported file type {extension}. Only .png files are supported.");
+                Logger.Log(BepInEx.Logging.LogLevel.Message, $"Unsupported file type {extension}. Only .png files are supported.");
                 return false;
             }).ToList();
 
@@ -85,7 +91,7 @@ namespace DragAndDrop
 
                 if (pngType == PngType.Unknown)
                 {
-                    Logger.Log(LogLevel.Message, "Unknown file format.");
+                    Logger.Log(BepInEx.Logging.LogLevel.Message, "Unknown file format.");
                     PlaySound(SystemSE.ok_l);
                 }
 
@@ -94,25 +100,42 @@ namespace DragAndDrop
 
             try
             {
-                if (Singleton<Scene>.Instance.NowSceneNames.Any(sceneName => sceneName == "CustomScene"))
+                if (Singleton<Scene>.Instance.NowSceneNames.Any(sceneName => sceneName == "CharaCustom"))
                 {
                     if (Singleton<CustomBase>.IsInstance())
                     {
                         if (goodFiles.Count > 1)
-                            Logger.Log(LogLevel.Message, "Warning: Only the first card will be loaded.");
+                            Logger.Log(BepInEx.Logging.LogLevel.Message, "Warning: Only the first card will be loaded.");
 
                         var path = goodFiles.First();
                         var pngType = GetType(path);
 
-                        if (pngType == PngType.KoikatuChara)
+                        if (pngType == PngType.AIS_Chara)
                         {
                             LoadMakerCharacter(path);
                             PlaySound(SystemSE.ok_s);
                         }
                         else if (pngType == PngType.KStudio)
                         {
-                            Logger.Log(LogLevel.Message, "Scene files cannot be loaded in the character maker.");
+                            Logger.Log(BepInEx.Logging.LogLevel.Message, "Scene files cannot be loaded in the character maker.");
                             PlaySound(SystemSE.ok_l);
+                        }
+                    }
+                }
+                else if (Singleton<Scene>.Instance.NowSceneNames.Any(sceneName => sceneName == "Map"))
+                {
+                    if (FindObjectsOfType<UICtrl>().Any(i => i.IsInit))
+                    {
+                        if (goodFiles.Count > 1)
+                            Logger.Log(BepInEx.Logging.LogLevel.Message, "Warning: Only the first card will be loaded.");
+
+                        var path = goodFiles.First();
+                        var pngType = GetType(path);
+
+                        if (pngType == PngType.AIS_Housing)
+                        {
+                            LoadHousing(path);
+                            PlaySound(SystemSE.ok_s);
                         }
                     }
                 }
@@ -121,7 +144,7 @@ namespace DragAndDrop
                     var goodFiles2 = goodFiles
                         .Select(x => new KeyValuePair<string, PngType>(x, GetType(x))).ToList();
                     var scenes = goodFiles2.Where(x => x.Value == PngType.KStudio).ToList();
-                    var cards = goodFiles2.Where(x => x.Value == PngType.KoikatuChara).ToList();
+                    var cards = goodFiles2.Where(x => x.Value == PngType.AIS_Chara).ToList();
 
                     StartCoroutine(StudioLoadCoroutine(scenes, cards, import));
                 }
@@ -136,13 +159,13 @@ namespace DragAndDrop
         private static void PlaySound(SystemSE se)
         {
             if (!Singleton<CustomBase>.IsInstance()) return;
-            Utils.Sound.Play(se);
+            Illusion.Game.Utils.Sound.Play(se);
         }
 
-        private static void PrintError(Exception ex)
+        private void PrintError(Exception ex)
         {
-            Logger.Log(LogLevel.Message, $"Character load failed: {ex.Message}");
-            Logger.Log(LogLevel.Error, $"[DragAndDrop] {ex}");
+            Logger.Log(BepInEx.Logging.LogLevel.Message, $"Character load failed: {ex.Message}");
+            Logger.Log(BepInEx.Logging.LogLevel.Error, $"[DragAndDrop] {ex}");
             PlaySound(SystemSE.ok_l);
         }
 
@@ -154,7 +177,7 @@ namespace DragAndDrop
                 if (!import)
                 {
                     if (scenes.Count > 1)
-                        Logger.Log(LogLevel.Message, "Warning: Only the first scene will be loaded. If you want to import multiple scenes, hold Shift while dropping them.");
+                        Logger.Log(BepInEx.Logging.LogLevel.Message, "Warning: Only the first scene will be loaded. If you want to import multiple scenes, hold Shift while dropping them.");
 
                     try
                     {
@@ -215,7 +238,7 @@ namespace DragAndDrop
                 StartCoroutine(Singleton<Studio.Studio>.Instance.LoadSceneCoroutine(path));
         }
 
-        private static void LoadSceneCharacter(string path, bool forceAdd)
+        private void LoadSceneCharacter(string path, bool forceAdd)
         {
             var charaCtrl = new ChaFileControl();
             if (!charaCtrl.LoadCharaFile(path, 1, true, true)) return;
@@ -241,9 +264,9 @@ namespace DragAndDrop
                     }
 
                     if (anySexChanged)
-                        Logger.Log(LogLevel.Message, "Warning: The character's sex has been changed to match the selected character(s).");
+                        Logger.Log(BepInEx.Logging.LogLevel.Message, "Warning: The character's sex has been changed to match the selected character(s).");
 
-                    // Prevent adding a new character if we alraedy replaced an existing one
+                    // Prevent adding a new character if we already replaced an existing one
                     if (anyChanged)
                         return;
                 }
@@ -260,24 +283,23 @@ namespace DragAndDrop
             using (var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
             using (var binaryReader = new BinaryReader(fileStream))
             {
+                string str;
                 try
                 {
                     PngFile.SkipPng(binaryReader);
                     binaryReader.ReadInt32();
+                    str = binaryReader.ReadString();
                 }
                 catch (EndOfStreamException)
                 {
                     return PngType.Unknown;
                 }
-                try
-                {
-                    var str = binaryReader.ReadString();
-                    if (str.StartsWith(CharaToken,StringComparison.OrdinalIgnoreCase))
-                        return PngType.KoikatuChara;
-                }
-                catch (EndOfStreamException)
-                {
-                }
+
+                if (str.StartsWith(CharaToken, StringComparison.OrdinalIgnoreCase))
+                    return PngType.AIS_Chara;
+
+                if (str.StartsWith(HouseToken, StringComparison.OrdinalIgnoreCase))
+                    return PngType.AIS_Housing;
 
                 try
                 {
@@ -298,7 +320,8 @@ namespace DragAndDrop
 
             var lf = UseMakerLoadPreferences.Value ? GetLoadFlags() : null;
 
-            var chaCtrl = Singleton<CustomBase>.Instance.chaCtrl;
+            var customBase = Singleton<CustomBase>.Instance;
+            var chaCtrl = customBase.chaCtrl;
             var chaFile = chaCtrl.chaFile;
 
             var originalSex = chaCtrl.sex;
@@ -318,39 +341,72 @@ namespace DragAndDrop
             if (chaFile.parameter.sex != originalSex)
             {
                 chaFile.parameter.sex = originalSex;
-                Logger.Log(LogLevel.Message, "Warning: The character's sex has been changed to match the editor mode.");
+                Logger.Log(BepInEx.Logging.LogLevel.Message, "Warning: The character's sex has been changed to match the editor mode.");
             }
-            chaCtrl.ChangeCoordinateType(true);
+            chaCtrl.ChangeNowCoordinate();
 
             if (lf != null)
                 chaCtrl.Reload(!lf.Clothes, !lf.Face, !lf.Hair, !lf.Body);
             else
                 chaCtrl.Reload();
 
-            Singleton<CustomBase>.Instance.updateCustomUI = true;
+            customBase.updateCustomUI = true;
+
+            for (var i = 0; i < 20; i++)
+            {
+                customBase.ChangeAcsSlotName(i);
+            }
+            customBase.SetUpdateToggleSetting();
+            customBase.forceUpdateAcsList = true;
+        }
+
+        private void LoadHousing(string path)
+        {
+            var craftInfo = CraftInfo.LoadStatic(path);
+            var housingID = Singleton<CraftScene>.Instance.HousingID;
+            if (Singleton<Manager.Housing>.Instance.dicAreaInfo.TryGetValue(housingID, out var areaInfo))
+            {
+                if (Singleton<Manager.Housing>.Instance.dicAreaSizeInfo.TryGetValue(areaInfo.size, out var areaSizeInfo))
+                {
+                    if (areaSizeInfo.compatibility.Contains(
+                        Singleton<Manager.Housing>.Instance.GetSizeType(craftInfo.AreaNo)))
+                    {
+                        Singleton<Selection>.Instance.SetSelectObjects(null);
+                        Singleton<Housing.UndoRedoManager>.Instance.Clear();
+                        Singleton<Manager.Housing>.Instance.Load(path, true, true);
+                        Singleton<Manager.Housing>.Instance.CheckOverlap();
+                        FindObjectsOfType<UICtrl>().First(i => i.IsInit).ListUICtrl.UpdateUI();
+                    }
+                }
+            }
         }
 
         private enum PngType
         {
             Unknown,
-            KoikatuChara,
-            KStudio
+            AIS_Chara,
+            KStudio,
+            AIS_Housing
         }
 
         private static LoadFlags GetLoadFlags()
         {
-            var cfw = FindObjectsOfType
-                <CustomFileWindow>()
-                .FirstOrDefault(i => i.fwType == CustomFileWindow.FileWindowType.CharaLoad);
-            if (cfw == null) return new LoadFlags();
+            var ccw = FindObjectsOfType<CustomCharaWindow>()
+                .FirstOrDefault(i => i.onClick01 == null && i.onClick03 != null);
+            if (ccw == null) return new LoadFlags();
+
+            if (!(typeof(CustomCharaWindow)
+                .GetField("tglLoadOption", BindingFlags.NonPublic | BindingFlags.Instance)
+                ?.GetValue(ccw) is Toggle[] opt))
+                return new LoadFlags();
 
             return new LoadFlags
             {
-                Body = cfw.tglChaLoadBody.isOn,
-                Clothes = cfw.tglChaLoadCoorde.isOn,
-                Hair = cfw.tglChaLoadHair.isOn,
-                Face = cfw.tglChaLoadFace.isOn,
-                Parameters = cfw.tglChaLoadParam.isOn
+                Face = opt[0].isOn,
+                Body = opt[1].isOn,
+                Hair = opt[2].isOn,
+                Clothes = opt[3].isOn,
+                Parameters = opt[4].isOn
             };
         }
 
